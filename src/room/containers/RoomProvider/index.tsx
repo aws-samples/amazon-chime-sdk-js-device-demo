@@ -12,7 +12,6 @@ import routes from '../../../routes';
 import { initialState, reducer, Type as actionType } from './reducer';
 import { MessageHandler, DeviceMessage } from '../../../shim/types';
 import { Type as messageType } from '../../../controller/containers/ControllerProvider/reducer';
-import { screenViewDiv } from '../VideoManager';
 
 const RoomProviderDispatchContext = createContext(null);
 const RoomProviderStateContext = createContext(null);
@@ -66,11 +65,9 @@ const RoomProvider: React.FC = ({ children }) => {
           dispatch({ type: actionType.EndMeeting });
           break;
         case actionType.StartScreenShareView:
-          MeetingManager.startViewingScreenShare(screenViewDiv());
           dispatch({ type: actionType.StartScreenShareView });
           break;
         case actionType.StopScreenShareView:
-          MeetingManager.stopViewingScreenShare();
           dispatch({ type: actionType.StopScreenShareView });
           break;
         default:

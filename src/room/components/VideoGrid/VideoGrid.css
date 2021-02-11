@@ -2,8 +2,34 @@
 
 .VideoGrid {
   display: grid;
-  height: 80vh;
   padding: 2rem;
+  max-width: 80%;
+  margin: auto;
+  justify-content: center;
+  justify-self: auto;
+  align-items: flex-end;
+}
+
+.VideoGrid--size-3,
+.VideoGrid--size-4,
+.VideoGrid--size-5,
+.VideoGrid--size-6,
+.VideoGrid--size-7 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.VideoGrid--size-8,
+.VideoGrid--size-9,
+.VideoGrid--size-10,
+.VideoGrid--size-11 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.VideoGrid--size-12,
+.VideoGrid--size-13,
+.VideoGrid--size-14,
+.VideoGrid--size-15,
+.VideoGrid--size-16 {
+  grid-template-columns: repeat(6, 1fr);
 }
 
 .VideoTile {
@@ -19,7 +45,29 @@
 
 #shared-content-view {
   height: 40vh;
+  max-width: 80%;
+  margin: auto;
   padding: 2rem;
   resize: both;
-  display: none;
+}
+
+#shared-content-view .VideoTile {
+  max-width: 100%;
+}
+
+/* Remote video tile */
+.VideoTile--remote {
+  padding: 2rem;
+  width: 100%;
+}
+
+.VideoTile-nameplate {
+  font-size: 14px;
+  border-bottom: 2px solid;
+  bottom: 0.5rem;
+  color: black;
+  left: 0.5rem;
+  max-width: calc(100% - 2rem);
+  padding: 0.5rem;
+  position: relative;
 }
