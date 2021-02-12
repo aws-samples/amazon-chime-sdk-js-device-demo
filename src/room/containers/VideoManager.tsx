@@ -1,16 +1,18 @@
-import React, { useReducer, useEffect } from 'react';
+import React, { useReducer, useEffect, useState, useRef } from "react";
 
-import MeetingManager from '../MeetingManager';
-import VideoGrid from '../components/VideoGrid';
-import VideoTile from '../components/VideoTile';
-import { ScreenMessageDetail } from 'amazon-chime-sdk-js';
-import { DeviceMessage } from '../../shim/types';
-import { Type as actionType } from './RoomProvider/reducer';
-import { useRoomProviderDispatch, useRoomProviderState } from './RoomProvider/index';
+import MeetingManager from "../MeetingManager";
+import VideoGrid from "../components/VideoGrid";
+import VideoTile from "../components/VideoTile";
+import { DeviceMessage } from "../../shim/types";
+import { Type as actionType } from "./RoomProvider/reducer";
+import {
+  useRoomProviderDispatch,
+  useRoomProviderState,
+} from "./RoomProvider/index";
 
 function reducer(state, { type, payload }) {
   switch (type) {
-    case 'TILE_UPDATED': {
+    case "TILE_UPDATED": {
       const { tileId, ...rest } = payload;
       return {
         ...state,
@@ -19,7 +21,7 @@ function reducer(state, { type, payload }) {
         },
       };
     }
-    case 'TILE_DELETED': {
+    case "TILE_DELETED": {
       const { [payload]: omit, ...rest } = state;
       return {
         ...rest,
@@ -30,73 +32,85 @@ function reducer(state, { type, payload }) {
     }
   }
 }
-// TODO: Make as component.
-export const screenViewDiv = () => document.getElementById('shared-content-view') as HTMLDivElement;
 
 const VideoManager = () => {
   const roomProviderDispatch = useRoomProviderDispatch();
   const { isViewingSharedScreen } = useRoomProviderState();
   const [state, dispatch] = useReducer(reducer, {});
+  const contentShareTile = useRef(null);
 
-  const videoTileDidUpdate = tileState => {
-    console.log(tileState.isContent)
-    dispatch({ type: 'TILE_UPDATED', payload: tileState });
+  const videoTileDidUpdate = (tileState) => {
+    if (tileState.isContent && tileState.tileId !== contentShareTile.current) {
+      contentShareTile.current = tileState.tileId;
+
+      const deviceMessage: DeviceMessage = {
+        type: actionType.StartScreenShareView,
+      };
+
+      roomProviderDispatch(deviceMessage);
+    }
+    // Handle contentShare tile
+    MeetingManager.getAttendee(tileState.boundAttendeeId.split("#")[0]).then(
+      (name: string) => {
+        dispatch({ type: "TILE_UPDATED", payload: { ...tileState, name } });
+      }
+    );
   };
 
   const videoTileWasRemoved = (tileId: number) => {
-    dispatch({ type: 'TILE_DELETED', payload: tileId });
-  };
+    if (tileId === contentShareTile?.current) {
+      contentShareTile.current = null;
 
-  const nameplateDiv = () =>
-    document.getElementById('share-content-view-nameplate') as HTMLDivElement;
+      const deviceMessage: DeviceMessage = {
+        type: actionType.StopScreenShareView,
+      };
 
-  const streamDidStart = (screenMessageDetail: ScreenMessageDetail): void => {
-    MeetingManager.getAttendee(screenMessageDetail.attendeeId).then((name: string) => {
-      nameplateDiv().innerHTML = name;
-    });
-    const deviceMessage: DeviceMessage = {
-      type: actionType.StartScreenShareView,
-    };
-
-    roomProviderDispatch(deviceMessage);
-  };
-
-  const streamDidStop = (screenMesssageDetail: ScreenMessageDetail): void => {
-    nameplateDiv().innerHTML = 'No one is sharing screen';
-    const deviceMessage: DeviceMessage = {
-      type: actionType.StopScreenShareView,
-    };
-
-    roomProviderDispatch(deviceMessage);
+      roomProviderDispatch(deviceMessage);
+    }
+    dispatch({ type: "TILE_DELETED", payload: tileId });
   };
 
   const videoObservers = { videoTileDidUpdate, videoTileWasRemoved };
-  const screenShareObservers = { streamDidStart, streamDidStop };
 
   useEffect(() => {
     MeetingManager.addAudioVideoObserver(videoObservers);
-    MeetingManager.registerScreenShareObservers(screenShareObservers);
-
     return () => {
       MeetingManager.removeMediaObserver(videoObservers);
-      MeetingManager.removeScreenShareObserver(screenShareObservers);
     };
   }, []);
 
-  useEffect(() => {
-    screenViewDiv().style.display = isViewingSharedScreen ? 'grid' : 'none';
-  }, [isViewingSharedScreen]);
-
-  const videos = Object.keys(state).map(tileId => (
+  const videos = Object.keys(state).map((tileId) => (
     <VideoTile
       key={tileId}
-      nameplate="Attendee ID"
+      nameplate={state[tileId].name}
       isLocal={state[tileId].localTile}
-      bindVideoTile={videoRef => MeetingManager.bindVideoTile(parseInt(tileId), videoRef)}
+      bindVideoTile={(videoRef) => {
+        MeetingManager.bindVideoTile(parseInt(tileId), videoRef);
+      }}
+      isContent={state[tileId].isContent}
     />
   ));
 
-  return <VideoGrid size={videos.length}>{videos}</VideoGrid>;
+  const videoTiles = videos.filter((video) => video.props.isContent === false);
+  const contentShareVideo = videos.filter(
+    (video) => video.props.isContent === true
+  )[0];
+
+  return (
+    <>
+      <div
+        id="shared-content-view"
+        style={{ display: isViewingSharedScreen ? "inline" : "none" }}
+      >
+        {contentShareVideo ? (
+          contentShareVideo
+        ) : (
+          <div id="share-content-view-nameplate">No one is sharing screen</div>
+        )}
+      </div>
+      <VideoGrid size={videos.length}>{videoTiles}</VideoGrid>
+    </>
+  );
 };
 
 export default VideoManager;

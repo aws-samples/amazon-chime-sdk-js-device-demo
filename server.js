@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require("uuid");
 
 // Store created meetings in a map so attendees can join by meeting title
 const meetingTable = {};
+const attendeeTable = {};
 
 // Use local host for application server
 const host = "127.0.0.1:8080";
@@ -41,6 +42,21 @@ http
       if (request.method === "GET" && requestUrl.pathname === "/") {
         // Return the contents of the index page
         respond(response, 200, "text/html", indexPage);
+      } else if (request.method === "GET" && requestUrl.pathname === "/attendee") {
+        if (
+          !requestUrl.query.title ||
+          !requestUrl.query.attendee
+        ) {
+          throw new Error("Required parameters: title and/or attendeeID are missing");
+        }
+        // Return the attendee Name
+        // Fetch the attendee info
+        const userName = attendeeTable[requestUrl.query.attendee].Attendee.ExternalUserId.split('#')[1] || "Unknown"
+        
+        respond(
+          response, 201, 
+          "application/json",
+          JSON.stringify({AttendeeInfo: {"Name": userName}}));
       } else if (
         process.env.DEBUG &&
         request.method === "POST" &&
@@ -58,7 +74,7 @@ http
           !requestUrl.query.title ||
           !requestUrl.query.name
         ) {
-          throw new Error("Need parameters: title, name, region");
+          throw new Error("Required parameters: title, name, region are missing.");
         }
 
         // Look up the meeting by its title. If it does not exist, create the meeting.
@@ -87,7 +103,7 @@ http
             // The meeting ID of the created meeting to add the attendee to
             MeetingId: meeting.Meeting.MeetingId,
 
-            // Any user ID you wish to associate with the attendeee.
+            // Any user ID you wish to associate with the attendee.
             // For simplicity here, we use a random id for uniqueness
             // combined with the name the user provided, which can later
             // be used to help build the roster.
@@ -96,6 +112,8 @@ http
             }`.substring(0, 64),
           })
           .promise();
+
+        attendeeTable[attendee.Attendee.AttendeeId] = attendee;
 
         // Return the meeting and attendee responses. The client will use these
         // to join the meeting.

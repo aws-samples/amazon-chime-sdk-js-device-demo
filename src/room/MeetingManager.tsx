@@ -6,31 +6,32 @@ import {
   DefaultMeetingSession,
   LogLevel,
   MeetingSessionConfiguration,
-  ScreenShareViewFacade,
-  ScreenObserver,
-} from 'amazon-chime-sdk-js';
+  VideoTile,
+} from "amazon-chime-sdk-js";
 
 const BASE_URL = [
   location.protocol,
-  '//',
+  "//",
   location.host,
-  location.pathname.replace(/\/*$/, '/'),
-].join('');
+  location.pathname.replace(/\/*$/, "/"),
+].join("");
 
 class MeetingManager {
   private meetingSession: DefaultMeetingSession;
   private audioVideo: AudioVideoFacade;
-  private screenShareView: ScreenShareViewFacade;
   private title: string;
 
-  async initializeMeetingSession(configuration: MeetingSessionConfiguration): Promise<any> {
-    const logger = new ConsoleLogger('DEV-SDK', LogLevel.DEBUG);
+  async initializeMeetingSession(
+    configuration: MeetingSessionConfiguration
+  ): Promise<any> {
+    const logger = new ConsoleLogger("DEV-SDK", LogLevel.DEBUG);
     const deviceController = new DefaultDeviceController(logger);
-    configuration.enableWebAudio = false;
-    this.meetingSession = new DefaultMeetingSession(configuration, logger, deviceController);
+    this.meetingSession = new DefaultMeetingSession(
+      configuration,
+      logger,
+      deviceController
+    );
     this.audioVideo = this.meetingSession.audioVideo;
-    // TODO: Update ScreenShareView to use new introduced content-based screen sharing.
-    this.screenShareView = this.meetingSession.screenShareView;
 
     await this.setupAudioDevices();
   }
@@ -45,38 +46,16 @@ class MeetingManager {
     await this.audioVideo.chooseAudioInputDevice(defaultInput);
   }
 
-  registerScreenShareObservers(observer: ScreenObserver): void {
-    if (!this.screenShareView) {
-      console.log('ScreenView not initialize. Cannot add observer');
-      return;
-    }
-    this.screenShareView.registerObserver(observer);
-  }
-
   addAudioVideoObserver(observer: AudioVideoObserver): void {
-    if (!this.audioVideo) {
-      console.error('AudioVideo not initialized. Cannot add observer');
-      return;
-    }
+    this.ensureAudioVideo();
+
     this.audioVideo.addObserver(observer);
   }
 
   removeMediaObserver(observer: AudioVideoObserver): void {
-    if (!this.audioVideo) {
-      console.error('AudioVideo not initialized. Cannot remove observer');
-      return;
-    }
+    this.ensureAudioVideo();
 
     this.audioVideo.removeObserver(observer);
-  }
-
-  removeScreenShareObserver(observer: ScreenObserver): void {
-    if (!this.screenShareView) {
-      console.error('ScreenView not initialized. Cannot remove observer');
-      return;
-    }
-
-    this.screenShareView.unregisterObserver(observer);
   }
 
   bindVideoTile(id: number, videoEl: HTMLVideoElement): void {
@@ -94,48 +73,38 @@ class MeetingManager {
     this.audioVideo.stopLocalVideoTile();
   }
 
-  async startViewingScreenShare(screenViewElement: HTMLDivElement): Promise<void> {
-    this.screenShareView.start(screenViewElement).catch(error => console.error(error));
-  }
-
-  stopViewingScreenShare(): void {
-    this.screenShareView.stop().catch(error => {
-      console.error(error);
-    });
-  }
-
   async joinMeeting(meetingId: string, name: string): Promise<any> {
-    const url = `${BASE_URL}join?title=${encodeURIComponent(meetingId)}&name=${encodeURIComponent(
-      name
-    )}`;
-    const res = await fetch(url, { method: 'POST' });
+    const url = `${BASE_URL}join?title=${encodeURIComponent(
+      meetingId
+    )}&name=${encodeURIComponent(name)}`;
+    const res = await fetch(url, { method: "POST" });
     const data = await res.json();
-    this.title = data.JoinInfo.Title;
+    this.title = meetingId;
     await this.initializeMeetingSession(
-      new MeetingSessionConfiguration(data.JoinInfo.Meeting, data.JoinInfo.Attendee)
+      new MeetingSessionConfiguration(
+        data.JoinInfo.Meeting,
+        data.JoinInfo.Attendee
+      )
     );
-    await this.meetingSession.screenShareView.open();
     this.audioVideo.start();
   }
 
   async endMeeting(): Promise<any> {
     await fetch(`${BASE_URL}end?title=${encodeURIComponent(this.title)}`, {
-      method: 'POST',
+      method: "POST",
     });
     this.leaveMeeting();
   }
 
   leaveMeeting(): void {
-    this.stopViewingScreenShare();
-    this.meetingSession.screenShareView.close();
     this.audioVideo.stop();
   }
 
   async getAttendee(attendeeId: string): Promise<string> {
     const response = await fetch(
-      `${BASE_URL}attendee?title=${encodeURIComponent(this.title)}&attendee=${encodeURIComponent(
-        attendeeId
-      )}`
+      `${BASE_URL}attendee?title=${encodeURIComponent(
+        this.title
+      )}&attendee=${encodeURIComponent(attendeeId)}`
     );
     const json = await response.json();
     return json.AttendeeInfo.Name;
@@ -147,6 +116,13 @@ class MeetingManager {
 
   unbindAudioElement(): void {
     this.audioVideo.unbindAudioElement();
+  }
+
+  private ensureAudioVideo() {
+    if (!this.audioVideo) {
+      console.error("AudioVideo not initialized. Cannot add observer");
+      return;
+    }
   }
 }
 
