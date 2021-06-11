@@ -8,8 +8,6 @@ const oneDayFromNow = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
 // Read resource names from the environment
 const meetingsTableName = process.env.MEETINGS_TABLE_NAME;
 const attendeesTableName = process.env.ATTENDEES_TABLE_NAME;
-const sqsQueueArn = process.env.SQS_QUEUE_ARN;
-const provideQueueArn = process.env.USE_EVENT_BRIDGE === 'false';
 const logGroupName = process.env.BROWSER_LOG_GROUP_NAME;
 
 function uuid() {
@@ -78,15 +76,6 @@ const putAttendee = async(title, attendeeId, name) => {
   }).promise();
 }
 
-function getNotificationsConfig() {
-  if (provideQueueArn) {
-    return  {
-      SqsQueueArn: sqsQueueArn,
-    };
-  }
-  return {}
-}
-
 // ===== Join or create meeting ===================================
 exports.createMeeting = async(event, context, callback) => {
   var response = {
@@ -109,7 +98,6 @@ exports.createMeeting = async(event, context, callback) => {
     const request = {
       ClientRequestToken: uuid(),
       MediaRegion: region,
-      NotificationsConfiguration: getNotificationsConfig(),
     };
     console.info('Creating new meeting: ' + JSON.stringify(request));
     meetingInfo = await chime.createMeeting(request).promise();
@@ -149,7 +137,6 @@ exports.join = async(event, context, callback) => {
     const request = {
       ClientRequestToken: uuid(),
       MediaRegion: region,
-      NotificationsConfiguration: getNotificationsConfig(),
     };
     console.info('Creating new meeting: ' + JSON.stringify(request));
     meetingInfo = await chime.createMeeting(request).promise();
