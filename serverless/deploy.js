@@ -7,14 +7,12 @@ let app = 'device';
 let region = 'us-east-1';
 let bucket = ``;
 let stack = ``;
-let useEventBridge = false;
 
 function usage() {
   console.log(`Usage: deploy.sh [-r region] [-b bucket] [-s stack] [-a application] [-e]`);
   console.log(`  -r, --region       Target region, default '${region}'`);
   console.log(`  -b, --s3-bucket    S3 bucket for deployment, required`);
   console.log(`  -s, --stack-name   CloudFormation stack name, required`);
-  console.log(`  -e, --event-bridge Enable EventBridge integration, default is no integration`);
   console.log(`  -h, --help         Show help and exit`);
 }
 
@@ -68,10 +66,6 @@ function parseArgs() {
       case '-s':
       case '--stack-name':
         stack = getArgOrExit(++i, args);
-        break;
-      case '-e':
-      case '--event-bridge':
-        useEventBridge = true;
         break;
       default:
         console.log(`Invalid argument ${args[i]}`);
@@ -148,8 +142,6 @@ spawnOrFail('sam', [
   './build/packaged.yaml',
   '--stack-name',
   `${stack}`,
-  '--parameter-overrides',
-  `UseEventBridge=${useEventBridge}`,
   '--capabilities',
   'CAPABILITY_IAM',
   '--region',

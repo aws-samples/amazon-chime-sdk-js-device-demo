@@ -18,7 +18,8 @@
     "build:fast": "webpack --config ./webpack.config.js",
     "build:prod": "webpack --config ./webpack.config.js --mode=production --devtool=false",
     "start:client": "webpack-dev-server",
-    "start:backend": "node server.js"
+    "start:backend": "node server.js",
+    "start": "concurrently \"npm run start:client\" \"npm run start:backend\""
   },
   "devDependencies": {
     "@types/react": "^16.14.3",
@@ -26,6 +27,7 @@
     "@types/react-router-dom": "^5.1.7",
     "@types/styled-components": "^5.1.7",
     "awesome-typescript-loader": "^5.2.1",
+    "concurrently": "5.2.0",
     "css-loader": "^3.6.0",
     "html-webpack-inline-source-plugin": "0.0.10",
     "html-webpack-plugin": "^3.2.0",
