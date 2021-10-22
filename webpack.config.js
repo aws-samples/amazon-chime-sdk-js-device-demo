@@ -3,7 +3,8 @@
 
 /* eslint-disable */
 const path = require('path');
-const HtmlWebpackInlineSourcePlugin = require('html-webpack-inline-source-plugin');
+const webpack = require('webpack');
+const InlineChunkHtmlPlugin = require('react-dev-utils/InlineChunkHtmlPlugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 /* eslint-enable */
 
@@ -17,7 +18,13 @@ module.exports = {
       filename: __dirname + `/dist/${app}.html`,
       inject: 'head',
     }),
-    new HtmlWebpackInlineSourcePlugin(),
+    new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [new RegExp(`${app}`)]),
+    new webpack.ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+  }),
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+    }),
   ],
   entry: [`./src/index.tsx`],
   output: {
@@ -29,17 +36,19 @@ module.exports = {
   },
   resolve: {
     extensions: ['.webpack.js', '.web.js', '.ts', '.tsx', '.js'],
-  },
-  node: {
-    fs: 'empty',
-    tls: 'empty'
+    fallback: {
+      fs: false,
+      tls: false,
+      crypto: false,
+      path: false,
+    }
   },
   module: {
     rules: [
       {
         test: /\.(tsx|jsx|ts)?$/,
         exclude: /node_modules/,
-        loader: 'awesome-typescript-loader',
+        loader: 'ts-loader',
       },
       {
         enforce: 'pre',
@@ -53,7 +62,7 @@ module.exports = {
       },
       {
         test: /\.(svg)$/,
-        loader: 'raw-loader',
+        type: 'asset/source',
       },
     ],
   },
@@ -70,12 +79,14 @@ module.exports = {
         },
       },
     },
-    contentBase: path.join(__dirname, 'dist'),
-    index: `${app}.html`,
-    compress: true,
+    static: {
+      directory: path.join(__dirname, 'dist')
+    },
+    devMiddleware: {
+      index: `${app}.html`,
+    },
     hot: true,
     host: '0.0.0.0',
-    disableHostCheck: true,
     port: 3000,
     https: true,
   },
@@ -83,5 +94,5 @@ module.exports = {
     hints: false,
   },
   mode: 'development',
-  devtool: 'cheap-module-eval-source-map',
+  devtool: 'eval-cheap-module-source-map',
 };

@@ -16,7 +16,6 @@
     "outDir": "build",
     "target": "es5",
     "lib": ["es6", "dom"],
-    "noEmit": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "suppressImplicitAnyIndexErrors": true,
