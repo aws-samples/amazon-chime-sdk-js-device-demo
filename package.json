@@ -5,7 +5,7 @@
   "dependencies": {
     "@types/aws-iot-device-sdk": "^1.0.2",
     "@types/aws-sdk": "^2.7.0",
-    "amazon-chime-sdk-js": "^2.19.0",
+    "amazon-chime-sdk-js": "^3.6.0",
     "aws-iot-device-sdk": "^2.2.6",
     "aws-sdk": "^2.836.0",
     "mqtt": "^4.2.8",
