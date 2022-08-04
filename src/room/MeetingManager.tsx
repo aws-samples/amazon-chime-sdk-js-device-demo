@@ -6,7 +6,6 @@ import {
   DefaultMeetingSession,
   LogLevel,
   MeetingSessionConfiguration,
-  VideoTile,
 } from "amazon-chime-sdk-js";
 
 const BASE_URL = [
@@ -24,7 +23,7 @@ class MeetingManager {
   async initializeMeetingSession(
     configuration: MeetingSessionConfiguration
   ): Promise<any> {
-    const logger = new ConsoleLogger("DEV-SDK", LogLevel.DEBUG);
+    const logger = new ConsoleLogger("DEV-SDK", LogLevel.INFO);
     const deviceController = new DefaultDeviceController(logger);
     this.meetingSession = new DefaultMeetingSession(
       configuration,
@@ -39,22 +38,20 @@ class MeetingManager {
   async setupAudioDevices(): Promise<void> {
     const audioOutput = await this.audioVideo.listAudioOutputDevices();
     const defaultOutput = audioOutput[0] && audioOutput[0].deviceId;
-    await this.audioVideo.chooseAudioOutputDevice(defaultOutput);
+    await this.audioVideo.chooseAudioOutput(defaultOutput);
 
     const audioInput = await this.audioVideo.listAudioInputDevices();
     const defaultInput = audioInput[0] && audioInput[0].deviceId;
-    await this.audioVideo.chooseAudioInputDevice(defaultInput);
+    await this.audioVideo.startAudioInput(defaultInput);
   }
 
   addAudioVideoObserver(observer: AudioVideoObserver): void {
     this.ensureAudioVideo();
-
     this.audioVideo.addObserver(observer);
   }
 
   removeMediaObserver(observer: AudioVideoObserver): void {
     this.ensureAudioVideo();
-
     this.audioVideo.removeObserver(observer);
   }
 
@@ -65,12 +62,13 @@ class MeetingManager {
   async startLocalVideo(): Promise<void> {
     const videoInput = await this.audioVideo.listVideoInputDevices();
     const defaultVideo = videoInput[0];
-    await this.audioVideo.chooseVideoInputDevice(defaultVideo);
+    await this.audioVideo.startVideoInput(defaultVideo);
     this.audioVideo.startLocalVideoTile();
   }
 
-  stopLocalVideo(): void {
+  async stopLocalVideo(): Promise<void> {
     this.audioVideo.stopLocalVideoTile();
+    await this.audioVideo.stopVideoInput();
   }
 
   async joinMeeting(meetingId: string, name: string): Promise<any> {
@@ -93,10 +91,11 @@ class MeetingManager {
     await fetch(`${BASE_URL}end?title=${encodeURIComponent(this.title)}`, {
       method: "POST",
     });
-    this.leaveMeeting();
+    await this.leaveMeeting();
   }
 
-  leaveMeeting(): void {
+  async leaveMeeting(): Promise<void> {
+    this.meetingSession.deviceController.destroy();
     this.audioVideo.stop();
   }
 
@@ -115,6 +114,7 @@ class MeetingManager {
   }
 
   unbindAudioElement(): void {
+    this.audioVideo.stopAudioInput();
     this.audioVideo.unbindAudioElement();
   }
 
