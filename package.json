@@ -7,7 +7,7 @@
     "@types/aws-sdk": "^2.7.0",
     "amazon-chime-sdk-js": "^3.6.0",
     "aws-iot-device-sdk": "^2.2.6",
-    "aws-sdk": "^2.836.0",
+    "aws-sdk": "^2.1354.0",
     "mqtt": "^4.2.8",
     "process": "^0.11.10",
     "react": "^16.14.0",
